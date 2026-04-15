@@ -2,7 +2,7 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Animated gradient background ───────────────────────── */
+/*  Animated gradient background  */
 body {
   min-height: 100vh;
   display: flex;
@@ -43,7 +43,7 @@ body::after {
 @keyframes drift1 { from { transform: translate(0,0); } to { transform: translate(60px, 80px); } }
 @keyframes drift2 { from { transform: translate(0,0); } to { transform: translate(-50px, -60px); } }
 
-/* ── Calculator card ─────────────────────────────────────── */
+/*  Calculator card */
 .calculator {
   width: 380px;
   background: linear-gradient(160deg,
@@ -73,7 +73,7 @@ body::after {
   border-radius: 50%;
 }
 
-/* ── Display ─────────────────────────────────────────────── */
+/*  Display  */
 .display {
   background: linear-gradient(160deg, rgba(8,6,22,0.95), rgba(5,10,28,0.98));
   border-radius: 18px;
@@ -113,7 +113,7 @@ body::after {
 .current.small { font-size: 28px; letter-spacing: 0; }
 .current.error { color: #ff6b8a; font-size: 20px; letter-spacing: 0; }
 
-/* ── Button Grid ─────────────────────────────────────────── */
+/*  Button Grid */
 .btn-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -122,7 +122,7 @@ body::after {
 }
 .memory-row { margin-bottom: 6px; }
 
-/* ── Base button ─────────────────────────────────────────── */
+/*   Base button  */
 .btn {
   height: 62px;
   border: none;
@@ -153,7 +153,7 @@ body::after {
 }
 .btn:active::after { opacity: 1; }
 
-/* ── Number buttons ──────────────────────────────────────── */
+/*   Number buttons */
 .btn.num {
   background: linear-gradient(145deg, #272450, #1e1c42);
   color: #ddd8ff;
@@ -165,7 +165,7 @@ body::after {
   box-shadow: 0 6px 18px rgba(0,0,0,0.4);
 }
 
-/* ── Function buttons ────────────────────────────────────── */
+/*   Function buttons  */
 .btn.fn {
   background: linear-gradient(145deg, #1c1a38, #151330);
   color: #8880cc;
@@ -178,7 +178,7 @@ body::after {
   color: #aaa4e0;
 }
 
-/* ── Operator buttons ────────────────────────────────────── */
+/*   Operator buttons  */
 .btn.op {
   background: linear-gradient(145deg, #2a1860, #1f1050);
   color: #c4aff8;
@@ -196,7 +196,7 @@ body::after {
   border-color: rgba(255,255,255,0.15);
 }
 
-/* ── Equals button ───────────────────────────────────────── */
+/*   Equals button  */
 .btn.eq {
   background: linear-gradient(135deg, #7c4dff 0%, #5271ff 50%, #448aff 100%);
   color: #fff;
@@ -210,7 +210,7 @@ body::after {
   filter: brightness(1.08);
 }
 
-/* ── Memory buttons ──────────────────────────────────────── */
+/*   Memory buttons  */
 .btn.mem {
   height: 38px;
   background: linear-gradient(145deg, #110f28, #0d0c22);
@@ -227,7 +227,7 @@ body::after {
   color: #8886c0;
 }
 
-/* ── Scientific toggle ───────────────────────────────────── */
+/*   Scientific toggle  */
 .toggle-sci {
   width: 100%;
   padding: 8px;
@@ -249,7 +249,7 @@ body::after {
   border-color: rgba(124,77,255,0.4);
 }
 
-/* ── Scientific panel ────────────────────────────────────── */
+/*  Scientific panel  */
 .sci-panel {
   display: none;
   margin-bottom: 10px;
@@ -290,7 +290,7 @@ body::after {
   border-color: rgba(34,211,238,0.3);
 }
 
-/* ── Angle mode row ──────────────────────────────────────── */
+/*   Angle mode row */
 .angle-row {
   display: flex;
   align-items: center;
@@ -324,7 +324,7 @@ body::after {
   box-shadow: 0 2px 10px rgba(124,77,255,0.4);
 }
 
-/* ── History panel ───────────────────────────────────────── */
+/*   History panel    */
 .toggle-history {
   width: 100%;
   margin-top: 10px;
@@ -398,7 +398,7 @@ body::after {
 }
 #historyList li:hover { background: rgba(124,77,255,0.08); }
 
-/* ── Scrollbar ───────────────────────────────────────────── */
+/*  Scrollbar */
 .history-panel::-webkit-scrollbar { width: 3px; }
 .history-panel::-webkit-scrollbar-track { background: transparent; }
 .history-panel::-webkit-scrollbar-thumb {
@@ -406,7 +406,7 @@ body::after {
   border-radius: 4px;
 }
 
-/* ── Responsive ──────────────────────────────────────────── */
+/*    Responsive */
 @media (max-width: 380px) {
   body { padding: 20px 0; align-items: flex-start; }
   .calculator { width: 100vw; border-radius: 0; padding: 16px; }
