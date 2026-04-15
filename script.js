@@ -1,68 +1,58 @@
-const currentEl  = document.getElementById('current');
-const historyEl  = document.getElementById('history');
-const historyList  = document.getElementById('historyList');
-const historyPanel = document.getElementById('historyPanel');
+/* Calculator – clean rewrite v4 */
+const currentEl        = document.getElementById('current');
+const historyEl        = document.getElementById('history');
+const historyList      = document.getElementById('historyList');
+const historyPanel     = document.getElementById('historyPanel');
 const toggleHistoryBtn = document.getElementById('toggleHistory');
 const clearHistoryBtn  = document.getElementById('clearHistory');
 
 // ── State ─────────────────────────────────────────────────
-// tokens: alternating numbers (string) and operators ('+','-','*','/')
-// e.g. ['7', '*', '3']  or  ['2', '+', '3', '*', '4']
-let tokens          = [];       // expression tokens built up before =
-let currentInput    = '0';      // what the user is currently typing
-let justCalculated  = false;    // true right after = was pressed
-let memory          = 0;
+let tokens     = [];     // e.g. ['7', '+', '5', '+']  (always ends with op when waiting)
+let current    = '0';    // the number currently shown / being typed
+let newNumber  = false;  // TRUE  → next digit REPLACES current instead of appending
+let memory     = 0;
 
-// ── Reliable precedence-aware evaluator ───────────────────
-// Parses an array like ['2','+','3','*','4'] → 14
+// ── Evaluator ─────────────────────────────────────────────
 function evaluate(toks) {
-  // Convert to numbers, validate
-  const nums = [];
-  const ops  = [];
-
+  // toks = ['7','+','5','+','6','+','3']  (odd length, ends with number)
+  const nums = [], ops = [];
   for (let i = 0; i < toks.length; i++) {
     if (i % 2 === 0) {
       const n = parseFloat(toks[i]);
-      if (isNaN(n)) throw new Error('Invalid number: ' + toks[i]);
+      if (isNaN(n)) throw new Error('NaN');
       nums.push(n);
     } else {
       ops.push(toks[i]);
     }
   }
+  if (nums.length !== ops.length + 1) throw new Error('bad');
 
-  if (nums.length !== ops.length + 1) throw new Error('Malformed expression');
-
-  // Pass 1 – resolve * and / (left to right)
+  // pass 1 – * /
   let i = 0;
   while (i < ops.length) {
     if (ops[i] === '*' || ops[i] === '/') {
       if (ops[i] === '/' && nums[i + 1] === 0) throw new Error('DIV0');
-      const result = ops[i] === '*'
-        ? nums[i] * nums[i + 1]
-        : nums[i] / nums[i + 1];
-      nums.splice(i, 2, result);
+      nums.splice(i, 2, ops[i] === '*' ? nums[i] * nums[i+1] : nums[i] / nums[i+1]);
       ops.splice(i, 1);
-    } else {
-      i++;
-    }
+    } else { i++; }
   }
-
-  // Pass 2 – resolve + and - (left to right)
+  // pass 2 – + -
   let acc = nums[0];
-  for (let j = 0; j < ops.length; j++) {
-    if (ops[j] === '+') acc += nums[j + 1];
-    else                acc -= nums[j + 1];
-  }
-
+  for (let j = 0; j < ops.length; j++)
+    acc = ops[j] === '+' ? acc + nums[j+1] : acc - nums[j+1];
   return acc;
 }
 
-// ── Display helpers ───────────────────────────────────────
-function updateDisplay(val, hist) {
+// ── Helpers ───────────────────────────────────────────────
+const SYM = { '+':'+', '-':'−', '*':'×', '/':'÷' };
+function fmt(n) { return parseFloat(n.toPrecision(12)).toString(); }
+function histStr() { return tokens.map((t,i) => i%2===1 ? SYM[t] : t).join(' '); }
+
+function render() {
   currentEl.className = 'current';
-  if (String(val).length > 14) currentEl.classList.add('small');
-  currentEl.textContent = val;
-  if (hist !== undefined) historyEl.textContent = hist;
+  if (current.length > 14) currentEl.classList.add('small');
+  currentEl.textContent = current;
+  historyEl.textContent = histStr();
 }
 
 function showError(msg) {
@@ -71,160 +61,136 @@ function showError(msg) {
   historyEl.textContent = '';
 }
 
-function formatResult(n) {
-  // Avoid floating-point noise (e.g. 0.1+0.2 → 0.3 not 0.30000000000000004)
-  return parseFloat(n.toPrecision(12)).toString();
-}
-
-function buildHistoryStr() {
-  // Display tokens with pretty symbols
-  return tokens.map((t, i) =>
-    i % 2 === 1 ? { '+':'+', '-':'−', '*':'×', '/':'÷' }[t] : t
-  ).join(' ');
-}
-
-// ── Input digit / decimal ─────────────────────────────────
-function inputDigit(digit) {
-  // Start fresh after = or after an operator was just pressed
-  const operatorJustPressed = tokens.length > 0 && tokens.length % 2 === 0;
-
-  if (justCalculated || operatorJustPressed) {
-    if (justCalculated) tokens = [];
-    currentInput = digit === '.' ? '0.' : digit;
-    justCalculated = false;
+// ── Digit / decimal input ─────────────────────────────────
+function inputDigit(d) {
+  if (newNumber) {
+    // start a completely fresh number
+    current   = (d === '.') ? '0.' : d;
+    newNumber = false;
   } else {
-    if (digit === '.') {
-      if (currentInput.includes('.')) return;   // prevent double decimal
-      currentInput += '.';
+    if (d === '.') {
+      if (current.includes('.')) return;   // no double decimal
+      current += '.';
     } else {
-      currentInput = currentInput === '0' ? digit : currentInput + digit;
+      current = (current === '0') ? d : current + d;
     }
   }
-  updateDisplay(currentInput, buildHistoryStr());
+  render();
 }
 
 // ── Operator ──────────────────────────────────────────────
-const OP_MAP = { add:'+', subtract:'-', multiply:'*', divide:'/' };
+const OP = { add:'+', subtract:'-', multiply:'*', divide:'/' };
 
 function setOperator(action) {
-  const op = OP_MAP[action];
+  const op = OP[action];
 
-  // If the last token is already an operator, just replace it
-  if (tokens.length > 0 && tokens.length % 2 === 0) {
+  // If operator pressed twice in a row → just swap the operator
+  if (newNumber && tokens.length > 0) {
     tokens[tokens.length - 1] = op;
     highlightActive(action);
-    updateDisplay(currentInput, buildHistoryStr());
+    render();
     return;
   }
 
-  // Push current number then operator
-  tokens.push(currentInput);
-  tokens.push(op);
-  justCalculated = false;
+  // Commit current number into tokens, then push operator
+  tokens.push(current);   // push the number
+  tokens.push(op);        // push the operator
+  newNumber = true;       // ← next digit starts a fresh number
 
-  updateDisplay(currentInput, buildHistoryStr());
   highlightActive(action);
+  render();
 }
 
 // ── Equals ────────────────────────────────────────────────
 function calculate() {
-  if (tokens.length === 0) return;   // nothing to evaluate
+  if (tokens.length === 0) return;
 
-  // Complete the expression with the current input
-  const fullTokens = [...tokens, currentInput];
-
+  // Build full expression: committed tokens + current number
+  const full = [...tokens, current];
   let result;
   try {
-    result = evaluate(fullTokens);
-  } catch (e) {
-    if (e.message === 'DIV0') showError('Cannot divide by zero');
-    else showError('Error');
-    resetState();
+    result = evaluate(full);
+  } catch(e) {
+    showError(e.message === 'DIV0' ? 'Cannot divide by zero' : 'Error');
+    hardReset();
     return;
   }
 
-  const expr   = buildHistoryStr() + ' ' + currentInput + ' =';
-  const resStr = formatResult(result);
+  const expr   = histStr() + ' ' + current + ' =';
+  const resStr = fmt(result);
+  addHistory(expr + ' ' + resStr);
 
-  addHistory(`${expr} ${resStr}`);
+  tokens    = [];
+  current   = resStr;
+  newNumber = true;   // next digit after = starts fresh
 
-  currentInput   = resStr;
-  tokens         = [];
-  justCalculated = true;
-
-  updateDisplay(resStr, expr);
+  currentEl.className   = 'current';
+  currentEl.textContent = resStr;
+  historyEl.textContent = expr;
   highlightActive(null);
 }
 
 // ── Clear ─────────────────────────────────────────────────
+function hardReset() {
+  tokens = []; current = '0'; newNumber = false;
+}
+
 function clearAll() {
-  resetState();
-  updateDisplay('0', '');
+  hardReset();
+  currentEl.className   = 'current';
+  currentEl.textContent = '0';
+  historyEl.textContent = '';
   highlightActive(null);
 }
 
 function clearEntry() {
-  currentInput = '0';
-  updateDisplay('0', buildHistoryStr());
+  current   = '0';
+  newNumber = false;
+  render();
 }
 
 function backspace() {
-  if (justCalculated) return;
-  currentInput = currentInput.length > 1 ? currentInput.slice(0, -1) : '0';
-  updateDisplay(currentInput, buildHistoryStr());
-}
-
-function resetState() {
-  tokens        = [];
-  currentInput  = '0';
-  justCalculated = false;
+  if (newNumber) return;
+  current = current.length > 1 ? current.slice(0, -1) : '0';
+  render();
 }
 
 // ── Advanced functions ────────────────────────────────────
 function applyFn(action) {
-  const val = parseFloat(currentInput);
-  if (isNaN(val)) return;
+  const v = parseFloat(current);
+  if (isNaN(v)) return;
 
   if (action === 'sqrt') {
-    if (val < 0) { showError('Invalid input'); return; }
-    const res = formatResult(Math.sqrt(val));
-    addHistory(`√(${currentInput}) = ${res}`);
-    currentInput = res;
-    justCalculated = true;
-    updateDisplay(res, `√(${val})`);
+    if (v < 0) { showError('Invalid input'); return; }
+    const r = fmt(Math.sqrt(v));
+    addHistory(`√(${current}) = ${r}`);
+    current = r; newNumber = true;
+    currentEl.textContent = r; historyEl.textContent = `√(${v})`;
 
   } else if (action === 'square') {
-    const res = formatResult(val * val);
-    addHistory(`(${currentInput})² = ${res}`);
-    currentInput = res;
-    justCalculated = true;
-    updateDisplay(res, `(${val})²`);
+    const r = fmt(v * v);
+    addHistory(`(${current})² = ${r}`);
+    current = r; newNumber = true;
+    currentEl.textContent = r; historyEl.textContent = `(${v})²`;
 
   } else if (action === 'percent') {
-    // If mid-expression use previous number as base, else just /100
-    let res;
-    if (tokens.length >= 2) {
-      const base = parseFloat(tokens[tokens.length - 2]);
-      res = formatResult((base * val) / 100);
-    } else {
-      res = formatResult(val / 100);
-    }
-    currentInput = res;
-    updateDisplay(res, buildHistoryStr());
+    const base = tokens.length >= 2 ? parseFloat(tokens[tokens.length - 2]) : null;
+    current = fmt(base !== null ? (base * v) / 100 : v / 100);
+    render();
 
   } else if (action === 'negate') {
-    currentInput = formatResult(val * -1);
-    updateDisplay(currentInput, buildHistoryStr());
+    current = fmt(v * -1);
+    render();
   }
 }
 
 // ── Memory ────────────────────────────────────────────────
 function memoryAction(action) {
-  const val = parseFloat(currentInput);
-  if (action === 'mc')       { memory = 0; }
-  else if (action === 'mr')  { currentInput = memory.toString(); justCalculated = true; updateDisplay(currentInput); }
-  else if (action === 'm-plus')  { memory += val; }
-  else if (action === 'm-minus') { memory -= val; }
+  const v = parseFloat(current);
+  if      (action === 'mc')      { memory = 0; }
+  else if (action === 'mr')      { current = memory.toString(); newNumber = true; render(); }
+  else if (action === 'm-plus')  { memory += v; }
+  else if (action === 'm-minus') { memory -= v; }
 }
 
 // ── History panel ─────────────────────────────────────────
@@ -233,38 +199,32 @@ function addHistory(entry) {
   li.textContent = entry;
   historyList.prepend(li);
 }
-
 toggleHistoryBtn.addEventListener('click', () => historyPanel.classList.toggle('open'));
 clearHistoryBtn.addEventListener('click',  () => { historyList.innerHTML = ''; });
 
 // ── Operator highlight ────────────────────────────────────
 function highlightActive(action) {
   document.querySelectorAll('.btn.op').forEach(b => b.classList.remove('active'));
-  if (action) {
-    const btn = document.querySelector(`[data-action="${action}"]`);
-    if (btn) btn.classList.add('active');
-  }
+  if (action) document.querySelector(`[data-action="${action}"]`)?.classList.add('active');
 }
 
 // ── Button clicks ─────────────────────────────────────────
 document.querySelectorAll('.btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    const val    = btn.dataset.value;
-    const action = btn.dataset.action;
-
-    if (val !== undefined) { inputDigit(val); return; }
-
-    switch (action) {
+    const v = btn.dataset.value;
+    const a = btn.dataset.action;
+    if (v !== undefined) { inputDigit(v); return; }
+    switch (a) {
       case 'clear':     clearAll();   break;
       case 'ce':        clearEntry(); break;
       case 'backspace': backspace();  break;
       case 'equals':    calculate();  break;
       case 'add': case 'subtract': case 'multiply': case 'divide':
-        setOperator(action); break;
+        setOperator(a); break;
       case 'sqrt': case 'square': case 'percent': case 'negate':
-        applyFn(action); break;
+        applyFn(a); break;
       case 'mc': case 'mr': case 'm-plus': case 'm-minus':
-        memoryAction(action); break;
+        memoryAction(a); break;
     }
   });
 });
@@ -272,19 +232,15 @@ document.querySelectorAll('.btn').forEach(btn => {
 // ── Keyboard ──────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key >= '0' && e.key <= '9') { inputDigit(e.key); return; }
-  if (e.key === '.')         { inputDigit('.'); return; }
-
+  if (e.key === '.') { inputDigit('.'); return; }
   const map = {
-    '+':       () => setOperator('add'),
-    '-':       () => setOperator('subtract'),
-    '*':       () => setOperator('multiply'),
-    '/':       () => { e.preventDefault(); setOperator('divide'); },
-    'Enter':   () => calculate(),
-    '=':       () => calculate(),
-    'Backspace': () => backspace(),
-    'Escape':  () => clearAll(),
-    '%':       () => applyFn('percent'),
+    '+': () => setOperator('add'),
+    '-': () => setOperator('subtract'),
+    '*': () => setOperator('multiply'),
+    '/': () => { e.preventDefault(); setOperator('divide'); },
+    'Enter': calculate, '=': calculate,
+    'Backspace': backspace, 'Escape': clearAll,
+    '%': () => applyFn('percent'),
   };
-
-  if (map[e.key]) map[e.key]();
+  map[e.key]?.();
 });
