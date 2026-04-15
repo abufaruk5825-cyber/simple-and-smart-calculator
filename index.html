@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="calculator">
+    <!-- Display -->
+    <div class="display">
+      <div class="history" id="history"></div>
+      <div class="current" id="current">0</div>
+    </div>
+
+    <!-- Memory Row -->
+    <div class="btn-grid memory-row">
+      <button class="btn mem" data-action="mc">MC</button>
+      <button class="btn mem" data-action="mr">MR</button>
+      <button class="btn mem" data-action="m-plus">M+</button>
+      <button class="btn mem" data-action="m-minus">M−</button>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-grid">
+      <button class="btn fn" data-action="clear">C</button>
+      <button class="btn fn" data-action="ce">CE</button>
+      <button class="btn fn" data-action="backspace">⌫</button>
+      <button class="btn op" data-action="divide">÷</button>
+
+      <button class="btn fn" data-action="sqrt">√</button>
+      <button class="btn fn" data-action="square">x²</button>
+      <button class="btn fn" data-action="percent">%</button>
+      <button class="btn op" data-action="multiply">×</button>
+
+      <button class="btn num" data-value="7">7</button>
+      <button class="btn num" data-value="8">8</button>
+      <button class="btn num" data-value="9">9</button>
+      <button class="btn op" data-action="subtract">−</button>
+
+      <button class="btn num" data-value="4">4</button>
+      <button class="btn num" data-value="5">5</button>
+      <button class="btn num" data-value="6">6</button>
+      <button class="btn op" data-action="add">+</button>
+
+      <button class="btn num" data-value="1">1</button>
+      <button class="btn num" data-value="2">2</button>
+      <button class="btn num" data-value="3">3</button>
+      <button class="btn eq" data-action="equals" rowspan="2">=</button>
+
+      <button class="btn num zero" data-value="0">0</button>
+      <button class="btn num" data-value=".">.</button>
+      <button class="btn fn" data-action="negate">+/−</button>
+    </div>
+
+    <!-- History Panel -->
+    <div class="history-panel" id="historyPanel">
+      <div class="history-header">
+        <span>History</span>
+        <button id="clearHistory">Clear</button>
+      </div>
+      <ul id="historyList"></ul>
+    </div>
+    <button class="toggle-history" id="toggleHistory">🕘 History</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f0f1a;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.calculator {
+  width: 340px;
+  background: #1a1a2e;
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+  position: relative;
+}
+
+/* Display */
+.display {
+  background: #0d0d1a;
+  border-radius: 16px;
+  padding: 16px 20px 12px;
+  margin-bottom: 14px;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.history {
+  font-size: 13px;
+  color: #555577;
+  min-height: 20px;
+  word-break: break-all;
+  text-align: right;
+}
+
+.current {
+  font-size: 42px;
+  font-weight: 300;
+  color: #e8e8ff;
+  word-break: break-all;
+  text-align: right;
+  line-height: 1.1;
+  transition: font-size 0.1s;
+}
+
+.current.small { font-size: 28px; }
+.current.error { color: #ff6b6b; font-size: 22px; }
+
+/* Button Grid */
+.btn-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.memory-row { margin-bottom: 4px; }
+
+.btn {
+  height: 62px;
+  border: none;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.08s, filter 0.08s, box-shadow 0.08s;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:active {
+  transform: scale(0.93);
+  filter: brightness(1.3);
+}
+
+/* Ripple */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.12);
+  opacity: 0;
+  border-radius: inherit;
+  transition: opacity 0.2s;
+}
+.btn:active::after { opacity: 1; }
+
+/* Number buttons */
+.btn.num {
+  background: #252540;
+  color: #d0d0f0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.btn.num:hover { background: #2e2e55; }
+
+/* Function buttons */
+.btn.fn {
+  background: #1e1e38;
+  color: #9090cc;
+  font-size: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.btn.fn:hover { background: #28284a; }
+
+/* Operator buttons */
+.btn.op {
+  background: #2d1b69;
+  color: #b39ddb;
+  box-shadow: 0 4px 12px rgba(45,27,105,0.5);
+}
+.btn.op:hover { background: #3d2880; }
+.btn.op.active {
+  background: #7c4dff;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(124,77,255,0.6);
+}
+
+/* Equals button */
+.btn.eq {
+  background: linear-gradient(135deg, #7c4dff, #448aff);
+  color: #fff;
+  font-size: 24px;
+  box-shadow: 0 4px 20px rgba(124,77,255,0.5);
+}
+.btn.eq:hover { filter: brightness(1.1); }
+
+/* Memory buttons */
+.btn.mem {
+  height: 40px;
+  background: #141428;
+  color: #6060aa;
+  font-size: 13px;
+  border-radius: 10px;
+}
+.btn.mem:hover { background: #1e1e3a; color: #9090cc; }
+
+/* History Panel */
+.toggle-history {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  background: #141428;
+  border: none;
+  border-radius: 10px;
+  color: #6060aa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-history:hover { background: #1e1e3a; color: #9090cc; }
+
+.history-panel {
+  display: none;
+  background: #0d0d1a;
+  border-radius: 14px;
+  margin-top: 10px;
+  padding: 12px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.history-panel.open { display: block; }
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #6060aa;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.history-header button {
+  background: none;
+  border: none;
+  color: #7c4dff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#historyList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#historyList li {
+  color: #8080bb;
+  font-size: 13px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: #141428;
+  text-align: right;
+}
+
+/* Scrollbar */
+.history-panel::-webkit-scrollbar { width: 4px; }
+.history-panel::-webkit-scrollbar-track { background: transparent; }
+.history-panel::-webkit-scrollbar-thumb { background: #2d2d55; border-radius: 4px; }
+
+/* Responsive */
+@media (max-width: 380px) {
+  .calculator { width: 100vw; border-radius: 0; padding: 16px; }
+  .btn { height: 54px; font-size: 16px; }
+  .current { font-size: 34px; }
+}
