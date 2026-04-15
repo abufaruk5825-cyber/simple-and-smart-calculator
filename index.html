@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="style.css" />
 </head>  
 <body>
+  <!-- Ambient background particles -->
+  <canvas id="bgCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.35;"></canvas>
+
   <div class="calculator">
     <!-- Display -->
     <div class="display">
@@ -106,6 +109,41 @@
     <button class="toggle-history" id="toggleHistory">🕘 History</button>
   </div>
 
-  <script src="script.js?v=8"></script>
+  <script src="script.js?v=9"></script>
+  <script>
+    // Subtle floating particles in background
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles;
+
+    function init() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      particles = Array.from({ length: 60 }, () => ({
+        x: Math.random() * W, y: Math.random() * H,
+        r: Math.random() * 1.5 + 0.3,
+        dx: (Math.random() - 0.5) * 0.3,
+        dy: (Math.random() - 0.5) * 0.3,
+        a: Math.random(),
+      }));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(180,160,255,${p.a * 0.6})`;
+        ctx.fill();
+        p.x += p.dx; p.y += p.dy;
+        if (p.x < 0 || p.x > W) p.dx *= -1;
+        if (p.y < 0 || p.y > H) p.dy *= -1;
+      });
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', init);
+    init(); draw();
+  </script>
 </body>
 </html>
