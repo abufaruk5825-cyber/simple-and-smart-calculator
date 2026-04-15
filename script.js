@@ -5,14 +5,14 @@ const historyPanel     = document.getElementById('historyPanel');
 const toggleHistoryBtn = document.getElementById('toggleHistory');
 const clearHistoryBtn  = document.getElementById('clearHistory');
 
-// ── State ─────────────────────────────────────────────────
+//   State 
 let tokens    = [];      // alternating numbers & operators: ['7','+','5','+']
 let current   = '0';     // number currently being typed / shown
 let newNumber = false;   // next digit replaces current instead of appending
 let afterCalc = false;   // "=" was just pressed
 let memory    = 0;
 
-// ── Evaluator (precedence: × ÷ before + −) ───────────────
+//  Evaluator (precedence: × ÷ before + −) 
 function evaluate(toks) {
   const nums = [], ops = [];
   for (let i = 0; i < toks.length; i++) {
@@ -42,7 +42,7 @@ function evaluate(toks) {
   return acc;
 }
 
-// ── Helpers ───────────────────────────────────────────────
+//   Helpers 
 const SYM = { '+':'+', '-':'−', '*':'×', '/':'÷' };
 
 function fmt(n)     { return parseFloat(n.toPrecision(12)).toString(); }
@@ -61,7 +61,7 @@ function showError(msg) {
   historyEl.textContent = '';
 }
 
-// ── Digit / decimal input ─────────────────────────────────
+//  Digit / decimal input 
 function inputDigit(d) {
   if (afterCalc) {
     tokens = []; current = (d === '.') ? '0.' : d;
@@ -83,7 +83,7 @@ function inputDigit(d) {
   render();
 }
 
-// ── Operator ──────────────────────────────────────────────
+//  Operator 
 const OP = { add:'+', subtract:'-', multiply:'*', divide:'/' };
 
 function setOperator(action) {
@@ -105,7 +105,7 @@ function setOperator(action) {
   render();
 }
 
-// ── Equals ────────────────────────────────────────────────
+//   Equals 
 function calculate() {
   if (tokens.length === 0) return;
 
@@ -130,7 +130,7 @@ function calculate() {
   render('');   // clean display — expression already saved to history panel
 }
 
-// ── Clear ─────────────────────────────────────────────────
+//   Clear
 function hardReset() {
   tokens = []; current = '0'; newNumber = false; afterCalc = false;
 }
@@ -143,7 +143,7 @@ function backspace()  {
   render();
 }
 
-// ── Angle mode (DEG / RAD) ────────────────────────────────
+//  Angle mode (DEG / RAD) 
 let angleDeg = true;
 const btnDeg = document.getElementById('btnDeg');
 const btnRad = document.getElementById('btnRad');
@@ -153,7 +153,7 @@ btnRad.addEventListener('click', () => { angleDeg = false; btnRad.classList.add(
 function toRad(x) { return angleDeg ? x * Math.PI / 180 : x; }
 function fromRad(x) { return angleDeg ? x * 180 / Math.PI : x; }
 
-// ── Advanced functions ────────────────────────────────────
+//  Advanced functions
 function applyFn(action) {
   const v = parseFloat(current);
   if (isNaN(v)) return;
@@ -223,7 +223,7 @@ function applyFn(action) {
   render(label);
 }
 
-// ── Scientific panel toggle ───────────────────────────────
+//  Scientific panel toggle 
 const sciPanel  = document.getElementById('sciPanel');
 const toggleSci = document.getElementById('toggleSci');
 toggleSci.addEventListener('click', () => {
@@ -233,7 +233,7 @@ toggleSci.addEventListener('click', () => {
     : '𝑓(𝑥) Scientific ▾';
 });
 
-// ── Memory ────────────────────────────────────────────────
+//   Memory
 function memoryAction(action) {
   const v = parseFloat(current);
   if      (action === 'mc')      { memory = 0; }
@@ -242,7 +242,7 @@ function memoryAction(action) {
   else if (action === 'm-minus') { memory -= v; }
 }
 
-// ── History panel ─────────────────────────────────────────
+//   History panel 
 function addHistory(entry) {
   const li = document.createElement('li');
   li.textContent = entry;
@@ -251,13 +251,13 @@ function addHistory(entry) {
 toggleHistoryBtn.addEventListener('click', () => historyPanel.classList.toggle('open'));
 clearHistoryBtn.addEventListener('click',  () => { historyList.innerHTML = ''; });
 
-// ── Operator highlight ────────────────────────────────────
+//   Operator highlight
 function highlightActive(action) {
   document.querySelectorAll('.btn.op').forEach(b => b.classList.remove('active'));
   if (action) document.querySelector(`[data-action="${action}"]`)?.classList.add('active');
 }
 
-// ── Button clicks ─────────────────────────────────────────
+//    Button clicks 
 document.querySelectorAll('.btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const v = btn.dataset.value;
@@ -283,7 +283,7 @@ document.querySelectorAll('.btn').forEach(btn => {
   });
 });
 
-// ── Keyboard ──────────────────────────────────────────────
+//   Keyboard 
 document.addEventListener('keydown', e => {
   if (e.key >= '0' && e.key <= '9') { inputDigit(e.key); return; }
   if (e.key === '.') { inputDigit('.'); return; }
