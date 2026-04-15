@@ -248,6 +248,10 @@ body {
 }
 .btn.sci:hover { background: #20204a; color: #c4b5fd; }
 
+/* Hyperbolic buttons — slightly different tint */
+.btn.sci.hyp { color: #67e8f9; }
+.btn.sci.hyp:hover { background: #0e2a30; color: #a5f3fc; }
+
 /* Angle mode row */
 .angle-row {
   display: flex;

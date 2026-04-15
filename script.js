@@ -201,6 +201,20 @@ function applyFn(action) {
       if (v <= 0) { showError('Domain error'); return; }
       r = fmt(Math.log10(v)); label = `log(${v})`; break;
 
+    // Hyperbolic
+    case 'sinh':  r = fmt(Math.sinh(v));  label = `sinh(${v})`; break;
+    case 'cosh':  r = fmt(Math.cosh(v));  label = `cosh(${v})`; break;
+    case 'tanh':  r = fmt(Math.tanh(v));  label = `tanh(${v})`; break;
+
+    // Inverse hyperbolic
+    case 'asinh': r = fmt(Math.asinh(v)); label = `sinh⁻¹(${v})`; break;
+    case 'acosh':
+      if (v < 1) { showError('Domain error'); return; }
+      r = fmt(Math.acosh(v)); label = `cosh⁻¹(${v})`; break;
+    case 'atanh':
+      if (v <= -1 || v >= 1) { showError('Domain error'); return; }
+      r = fmt(Math.atanh(v)); label = `tanh⁻¹(${v})`; break;
+
     default: return;
   }
 
@@ -259,6 +273,8 @@ document.querySelectorAll('.btn').forEach(btn => {
       case 'sqrt': case 'square': case 'percent': case 'negate':
       case 'sin': case 'cos': case 'tan':
       case 'asin': case 'acos': case 'atan':
+      case 'sinh': case 'cosh': case 'tanh':
+      case 'asinh': case 'acosh': case 'atanh':
       case 'ln': case 'log10':
         applyFn(a); break;
       case 'mc': case 'mr': case 'm-plus': case 'm-minus':
