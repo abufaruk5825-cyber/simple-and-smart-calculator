@@ -143,34 +143,81 @@ function backspace()  {
   render();
 }
 
+// ── Angle mode (DEG / RAD) ────────────────────────────────
+let angleDeg = true;
+const btnDeg = document.getElementById('btnDeg');
+const btnRad = document.getElementById('btnRad');
+btnDeg.addEventListener('click', () => { angleDeg = true;  btnDeg.classList.add('active');    btnRad.classList.remove('active'); });
+btnRad.addEventListener('click', () => { angleDeg = false; btnRad.classList.add('active');    btnDeg.classList.remove('active'); });
+
+function toRad(x) { return angleDeg ? x * Math.PI / 180 : x; }
+function fromRad(x) { return angleDeg ? x * 180 / Math.PI : x; }
+
 // ── Advanced functions ────────────────────────────────────
 function applyFn(action) {
   const v = parseFloat(current);
   if (isNaN(v)) return;
 
-  if (action === 'sqrt') {
-    if (v < 0) { showError('Invalid input'); return; }
-    const r = fmt(Math.sqrt(v));
-    addHistory(`√(${current}) = ${r}`);
-    current = r; newNumber = true;
-    render(`√(${v})`);
+  let r, label;
 
-  } else if (action === 'square') {
-    const r = fmt(v * v);
-    addHistory(`(${current})² = ${r}`);
-    current = r; newNumber = true;
-    render(`(${v})²`);
+  switch (action) {
+    case 'sqrt':
+      if (v < 0) { showError('Invalid input'); return; }
+      r = fmt(Math.sqrt(v)); label = `√(${v})`;
+      break;
+    case 'square':
+      r = fmt(v * v); label = `(${v})²`;
+      break;
+    case 'percent': {
+      const base = tokens.length >= 2 ? parseFloat(tokens[tokens.length - 2]) : null;
+      current = fmt(base !== null ? (base * v) / 100 : v / 100);
+      render(); return;
+    }
+    case 'negate':
+      current = fmt(v * -1); render(); return;
 
-  } else if (action === 'percent') {
-    const base = tokens.length >= 2 ? parseFloat(tokens[tokens.length - 2]) : null;
-    current = fmt(base !== null ? (base * v) / 100 : v / 100);
-    render();
+    // Trig (input in DEG or RAD based on mode)
+    case 'sin':  r = fmt(Math.sin(toRad(v)));  label = `sin(${v})`; break;
+    case 'cos':  r = fmt(Math.cos(toRad(v)));  label = `cos(${v})`; break;
+    case 'tan':
+      if (angleDeg && Math.abs(v % 180) === 90) { showError('Undefined'); return; }
+      r = fmt(Math.tan(toRad(v))); label = `tan(${v})`; break;
 
-  } else if (action === 'negate') {
-    current = fmt(v * -1);
-    render();
+    // Inverse trig (result in DEG or RAD based on mode)
+    case 'asin':
+      if (v < -1 || v > 1) { showError('Domain error'); return; }
+      r = fmt(fromRad(Math.asin(v))); label = `sin⁻¹(${v})`; break;
+    case 'acos':
+      if (v < -1 || v > 1) { showError('Domain error'); return; }
+      r = fmt(fromRad(Math.acos(v))); label = `cos⁻¹(${v})`; break;
+    case 'atan':
+      r = fmt(fromRad(Math.atan(v))); label = `tan⁻¹(${v})`; break;
+
+    // Logarithms
+    case 'ln':
+      if (v <= 0) { showError('Domain error'); return; }
+      r = fmt(Math.log(v)); label = `ln(${v})`; break;
+    case 'log10':
+      if (v <= 0) { showError('Domain error'); return; }
+      r = fmt(Math.log10(v)); label = `log(${v})`; break;
+
+    default: return;
   }
+
+  addHistory(`${label} = ${r}`);
+  current = r; newNumber = true;
+  render(label);
 }
+
+// ── Scientific panel toggle ───────────────────────────────
+document.getElementById('toggleSci').addEventListener('click', () => {
+  const panel = document.getElementById('sciPanel');
+  const btn   = document.getElementById('toggleSci');
+  panel.classList.toggle('open');
+  btn.textContent = panel.classList.contains('open')
+    ? '𝑓(𝑥) Scientific ▴'
+    : '𝑓(𝑥) Scientific ▾';
+});
 
 // ── Memory ────────────────────────────────────────────────
 function memoryAction(action) {
@@ -210,6 +257,9 @@ document.querySelectorAll('.btn').forEach(btn => {
       case 'add': case 'subtract': case 'multiply': case 'divide':
         setOperator(a); break;
       case 'sqrt': case 'square': case 'percent': case 'negate':
+      case 'sin': case 'cos': case 'tan':
+      case 'asin': case 'acos': case 'atan':
+      case 'ln': case 'log10':
         applyFn(a); break;
       case 'mc': case 'mr': case 'm-plus': case 'm-minus':
         memoryAction(a); break;

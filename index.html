@@ -22,6 +22,33 @@
       <button class="btn mem" data-action="m-minus">M−</button>
     </div>
 
+    <!-- Scientific toggle -->
+    <button class="toggle-sci" id="toggleSci">𝑓(𝑥) Scientific ▾</button>
+
+    <!-- Scientific Panel -->
+    <div class="sci-panel" id="sciPanel">
+      <!-- Trig row -->
+      <div class="btn-grid sci-grid">
+        <button class="btn sci" data-action="sin">sin</button>
+        <button class="btn sci" data-action="cos">cos</button>
+        <button class="btn sci" data-action="tan">tan</button>
+        <button class="btn sci" data-action="ln">ln</button>
+      </div>
+      <!-- Inverse trig row -->
+      <div class="btn-grid sci-grid">
+        <button class="btn sci" data-action="asin">sin⁻¹</button>
+        <button class="btn sci" data-action="acos">cos⁻¹</button>
+        <button class="btn sci" data-action="atan">tan⁻¹</button>
+        <button class="btn sci" data-action="log10">log</button>
+      </div>
+      <!-- Mode toggle -->
+      <div class="angle-row">
+        <span class="angle-label">Angle:</span>
+        <button class="angle-btn active" id="btnDeg">DEG</button>
+        <button class="angle-btn" id="btnRad">RAD</button>
+      </div>
+    </div>
+
     <!-- Buttons -->
     <div class="btn-grid">
       <button class="btn fn" data-action="clear">C</button>
@@ -65,6 +92,6 @@
     <button class="toggle-history" id="toggleHistory">🕘 History</button>
   </div>
 
-  <script src="script.js?v=6"></script>
+  <script src="script.js?v=7"></script>
 </body>
 </html>
