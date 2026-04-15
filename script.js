@@ -1,24 +1,68 @@
-const currentEl = document.getElementById('current');
-const historyEl = document.getElementById('history');
-const historyList = document.getElementById('historyList');
+const currentEl  = document.getElementById('current');
+const historyEl  = document.getElementById('history');
+const historyList  = document.getElementById('historyList');
 const historyPanel = document.getElementById('historyPanel');
 const toggleHistoryBtn = document.getElementById('toggleHistory');
-const clearHistoryBtn = document.getElementById('clearHistory');
+const clearHistoryBtn  = document.getElementById('clearHistory');
 
-let state = {
-  current: '0',
-  previous: '',
-  operator: null,
-  justCalculated: false,
-  memory: 0,
-};
+// ── State ─────────────────────────────────────────────────
+// tokens: alternating numbers (string) and operators ('+','-','*','/')
+// e.g. ['7', '*', '3']  or  ['2', '+', '3', '*', '4']
+let tokens          = [];       // expression tokens built up before =
+let currentInput    = '0';      // what the user is currently typing
+let justCalculated  = false;    // true right after = was pressed
+let memory          = 0;
 
-// ── Display ──────────────────────────────────────────────
-function updateDisplay(val, hist = '') {
+// ── Reliable precedence-aware evaluator ───────────────────
+// Parses an array like ['2','+','3','*','4'] → 14
+function evaluate(toks) {
+  // Convert to numbers, validate
+  const nums = [];
+  const ops  = [];
+
+  for (let i = 0; i < toks.length; i++) {
+    if (i % 2 === 0) {
+      const n = parseFloat(toks[i]);
+      if (isNaN(n)) throw new Error('Invalid number: ' + toks[i]);
+      nums.push(n);
+    } else {
+      ops.push(toks[i]);
+    }
+  }
+
+  if (nums.length !== ops.length + 1) throw new Error('Malformed expression');
+
+  // Pass 1 – resolve * and / (left to right)
+  let i = 0;
+  while (i < ops.length) {
+    if (ops[i] === '*' || ops[i] === '/') {
+      if (ops[i] === '/' && nums[i + 1] === 0) throw new Error('DIV0');
+      const result = ops[i] === '*'
+        ? nums[i] * nums[i + 1]
+        : nums[i] / nums[i + 1];
+      nums.splice(i, 2, result);
+      ops.splice(i, 1);
+    } else {
+      i++;
+    }
+  }
+
+  // Pass 2 – resolve + and - (left to right)
+  let acc = nums[0];
+  for (let j = 0; j < ops.length; j++) {
+    if (ops[j] === '+') acc += nums[j + 1];
+    else                acc -= nums[j + 1];
+  }
+
+  return acc;
+}
+
+// ── Display helpers ───────────────────────────────────────
+function updateDisplay(val, hist) {
   currentEl.className = 'current';
-  if (val.length > 14) currentEl.classList.add('small');
+  if (String(val).length > 14) currentEl.classList.add('small');
   currentEl.textContent = val;
-  historyEl.textContent = hist;
+  if (hist !== undefined) historyEl.textContent = hist;
 }
 
 function showError(msg) {
@@ -27,73 +71,92 @@ function showError(msg) {
   historyEl.textContent = '';
 }
 
-// ── Number input ─────────────────────────────────────────
+function formatResult(n) {
+  // Avoid floating-point noise (e.g. 0.1+0.2 → 0.3 not 0.30000000000000004)
+  return parseFloat(n.toPrecision(12)).toString();
+}
+
+function buildHistoryStr() {
+  // Display tokens with pretty symbols
+  return tokens.map((t, i) =>
+    i % 2 === 1 ? { '+':'+', '-':'−', '*':'×', '/':'÷' }[t] : t
+  ).join(' ');
+}
+
+// ── Input digit / decimal ─────────────────────────────────
 function inputDigit(digit) {
-  if (state.justCalculated) {
-    state.current = digit === '.' ? '0.' : digit;
-    state.justCalculated = false;
+  // Start fresh after = or after an operator was just pressed
+  const operatorJustPressed = tokens.length > 0 && tokens.length % 2 === 0;
+
+  if (justCalculated || operatorJustPressed) {
+    if (justCalculated) tokens = [];
+    currentInput = digit === '.' ? '0.' : digit;
+    justCalculated = false;
   } else {
     if (digit === '.') {
-      if (state.current.includes('.')) return;
-      state.current = state.current + '.';
+      if (currentInput.includes('.')) return;   // prevent double decimal
+      currentInput += '.';
     } else {
-      state.current = state.current === '0' ? digit : state.current + digit;
+      currentInput = currentInput === '0' ? digit : currentInput + digit;
     }
   }
-  updateDisplay(state.current, historyEl.textContent);
+  updateDisplay(currentInput, buildHistoryStr());
 }
 
-// ── Operators ─────────────────────────────────────────────
-function setOperator(op) {
-  if (state.operator && !state.justCalculated) {
-    calculate(false);
+// ── Operator ──────────────────────────────────────────────
+const OP_MAP = { add:'+', subtract:'-', multiply:'*', divide:'/' };
+
+function setOperator(action) {
+  const op = OP_MAP[action];
+
+  // If the last token is already an operator, just replace it
+  if (tokens.length > 0 && tokens.length % 2 === 0) {
+    tokens[tokens.length - 1] = op;
+    highlightActive(action);
+    updateDisplay(currentInput, buildHistoryStr());
+    return;
   }
-  state.previous = state.current;
-  state.operator = op;
-  state.justCalculated = false;
-  updateDisplay(state.current, `${state.previous} ${opSymbol(op)}`);
+
+  // Push current number then operator
+  tokens.push(currentInput);
+  tokens.push(op);
+  justCalculated = false;
+
+  updateDisplay(currentInput, buildHistoryStr());
+  highlightActive(action);
 }
 
-function opSymbol(op) {
-  return { add: '+', subtract: '−', multiply: '×', divide: '÷' }[op] || op;
-}
+// ── Equals ────────────────────────────────────────────────
+function calculate() {
+  if (tokens.length === 0) return;   // nothing to evaluate
 
-// ── Calculate ─────────────────────────────────────────────
-function calculate(addToHistory = true) {
-  if (!state.operator || state.previous === '') return;
+  // Complete the expression with the current input
+  const fullTokens = [...tokens, currentInput];
 
-  const a = parseFloat(state.previous);
-  const b = parseFloat(state.current);
   let result;
-
-  if (state.operator === 'divide' && b === 0) {
-    showError('Cannot divide by zero');
+  try {
+    result = evaluate(fullTokens);
+  } catch (e) {
+    if (e.message === 'DIV0') showError('Cannot divide by zero');
+    else showError('Error');
     resetState();
     return;
   }
 
-  switch (state.operator) {
-    case 'add':      result = a + b; break;
-    case 'subtract': result = a - b; break;
-    case 'multiply': result = a * b; break;
-    case 'divide':   result = a / b; break;
-  }
+  const expr   = buildHistoryStr() + ' ' + currentInput + ' =';
+  const resStr = formatResult(result);
 
-  const expr = `${state.previous} ${opSymbol(state.operator)} ${state.current} =`;
-  result = parseFloat(result.toPrecision(12)).toString();
+  addHistory(`${expr} ${resStr}`);
 
-  if (addToHistory) addHistory(`${expr} ${result}`);
+  currentInput   = resStr;
+  tokens         = [];
+  justCalculated = true;
 
-  state.current = result;
-  state.previous = '';
-  state.operator = null;
-  state.justCalculated = true;
-
-  updateDisplay(result, expr);
+  updateDisplay(resStr, expr);
   highlightActive(null);
 }
 
-// ── Clear functions ───────────────────────────────────────
+// ── Clear ─────────────────────────────────────────────────
 function clearAll() {
   resetState();
   updateDisplay('0', '');
@@ -101,62 +164,67 @@ function clearAll() {
 }
 
 function clearEntry() {
-  state.current = '0';
-  updateDisplay('0', historyEl.textContent);
+  currentInput = '0';
+  updateDisplay('0', buildHistoryStr());
 }
 
 function backspace() {
-  if (state.justCalculated) return;
-  state.current = state.current.length > 1 ? state.current.slice(0, -1) : '0';
-  updateDisplay(state.current, historyEl.textContent);
+  if (justCalculated) return;
+  currentInput = currentInput.length > 1 ? currentInput.slice(0, -1) : '0';
+  updateDisplay(currentInput, buildHistoryStr());
 }
 
 function resetState() {
-  state.current = '0';
-  state.previous = '';
-  state.operator = null;
-  state.justCalculated = false;
+  tokens        = [];
+  currentInput  = '0';
+  justCalculated = false;
 }
 
 // ── Advanced functions ────────────────────────────────────
 function applyFn(action) {
-  const val = parseFloat(state.current);
+  const val = parseFloat(currentInput);
+  if (isNaN(val)) return;
 
   if (action === 'sqrt') {
     if (val < 0) { showError('Invalid input'); return; }
-    const result = parseFloat(Math.sqrt(val).toPrecision(12)).toString();
-    addHistory(`√(${state.current}) = ${result}`);
-    state.current = result;
-    state.justCalculated = true;
-    updateDisplay(result, `√(${val})`);
+    const res = formatResult(Math.sqrt(val));
+    addHistory(`√(${currentInput}) = ${res}`);
+    currentInput = res;
+    justCalculated = true;
+    updateDisplay(res, `√(${val})`);
 
   } else if (action === 'square') {
-    const result = parseFloat((val * val).toPrecision(12)).toString();
-    addHistory(`(${state.current})² = ${result}`);
-    state.current = result;
-    state.justCalculated = true;
-    updateDisplay(result, `(${val})²`);
+    const res = formatResult(val * val);
+    addHistory(`(${currentInput})² = ${res}`);
+    currentInput = res;
+    justCalculated = true;
+    updateDisplay(res, `(${val})²`);
 
   } else if (action === 'percent') {
-    const result = state.operator && state.previous !== ''
-      ? parseFloat(((parseFloat(state.previous) * val) / 100).toPrecision(12)).toString()
-      : parseFloat((val / 100).toPrecision(12)).toString();
-    state.current = result;
-    updateDisplay(result, historyEl.textContent);
+    // If mid-expression use previous number as base, else just /100
+    let res;
+    if (tokens.length >= 2) {
+      const base = parseFloat(tokens[tokens.length - 2]);
+      res = formatResult((base * val) / 100);
+    } else {
+      res = formatResult(val / 100);
+    }
+    currentInput = res;
+    updateDisplay(res, buildHistoryStr());
 
   } else if (action === 'negate') {
-    state.current = (val * -1).toString();
-    updateDisplay(state.current, historyEl.textContent);
+    currentInput = formatResult(val * -1);
+    updateDisplay(currentInput, buildHistoryStr());
   }
 }
 
 // ── Memory ────────────────────────────────────────────────
 function memoryAction(action) {
-  const val = parseFloat(state.current);
-  if (action === 'mc')      { state.memory = 0; }
-  else if (action === 'mr') { state.current = state.memory.toString(); state.justCalculated = true; updateDisplay(state.current, historyEl.textContent); }
-  else if (action === 'm-plus')  { state.memory += val; }
-  else if (action === 'm-minus') { state.memory -= val; }
+  const val = parseFloat(currentInput);
+  if (action === 'mc')       { memory = 0; }
+  else if (action === 'mr')  { currentInput = memory.toString(); justCalculated = true; updateDisplay(currentInput); }
+  else if (action === 'm-plus')  { memory += val; }
+  else if (action === 'm-minus') { memory -= val; }
 }
 
 // ── History panel ─────────────────────────────────────────
@@ -166,78 +234,57 @@ function addHistory(entry) {
   historyList.prepend(li);
 }
 
-toggleHistoryBtn.addEventListener('click', () => {
-  historyPanel.classList.toggle('open');
-});
+toggleHistoryBtn.addEventListener('click', () => historyPanel.classList.toggle('open'));
+clearHistoryBtn.addEventListener('click',  () => { historyList.innerHTML = ''; });
 
-clearHistoryBtn.addEventListener('click', () => {
-  historyList.innerHTML = '';
-});
-
-// ── Active operator highlight ─────────────────────────────
-function highlightActive(op) {
+// ── Operator highlight ────────────────────────────────────
+function highlightActive(action) {
   document.querySelectorAll('.btn.op').forEach(b => b.classList.remove('active'));
-  if (op) {
-    const btn = document.querySelector(`[data-action="${op}"]`);
+  if (action) {
+    const btn = document.querySelector(`[data-action="${action}"]`);
     if (btn) btn.classList.add('active');
   }
 }
 
-// ── Button click events ───────────────────────────────────
+// ── Button clicks ─────────────────────────────────────────
 document.querySelectorAll('.btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    const val = btn.dataset.value;
+    const val    = btn.dataset.value;
     const action = btn.dataset.action;
 
-    if (val !== undefined) {
-      inputDigit(val);
-      return;
-    }
+    if (val !== undefined) { inputDigit(val); return; }
 
     switch (action) {
-      case 'clear':     clearAll(); break;
+      case 'clear':     clearAll();   break;
       case 'ce':        clearEntry(); break;
-      case 'backspace': backspace(); break;
-      case 'equals':    calculate(); break;
-      case 'add':
-      case 'subtract':
-      case 'multiply':
-      case 'divide':
-        setOperator(action);
-        highlightActive(action);
-        break;
-      case 'sqrt':
-      case 'square':
-      case 'percent':
-      case 'negate':
-        applyFn(action);
-        break;
-      case 'mc':
-      case 'mr':
-      case 'm-plus':
-      case 'm-minus':
-        memoryAction(action);
-        break;
+      case 'backspace': backspace();  break;
+      case 'equals':    calculate();  break;
+      case 'add': case 'subtract': case 'multiply': case 'divide':
+        setOperator(action); break;
+      case 'sqrt': case 'square': case 'percent': case 'negate':
+        applyFn(action); break;
+      case 'mc': case 'mr': case 'm-plus': case 'm-minus':
+        memoryAction(action); break;
     }
   });
 });
 
-// ── Keyboard support ──────────────────────────────────────
+// ── Keyboard ──────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key >= '0' && e.key <= '9') { inputDigit(e.key); return; }
-  if (e.key === '.') { inputDigit('.'); return; }
+  if (e.key === '.')         { inputDigit('.'); return; }
 
-  const keyMap = {
-    '+': () => { setOperator('add'); highlightActive('add'); },
-    '-': () => { setOperator('subtract'); highlightActive('subtract'); },
-    '*': () => { setOperator('multiply'); highlightActive('multiply'); },
-    '/': () => { e.preventDefault(); setOperator('divide'); highlightActive('divide'); },
-    'Enter': () => calculate(),
-    '=': () => calculate(),
+  const map = {
+    '+':       () => setOperator('add'),
+    '-':       () => setOperator('subtract'),
+    '*':       () => setOperator('multiply'),
+    '/':       () => { e.preventDefault(); setOperator('divide'); },
+    'Enter':   () => calculate(),
+    '=':       () => calculate(),
     'Backspace': () => backspace(),
-    'Escape': () => clearAll(),
-    '%': () => applyFn('percent'),
+    'Escape':  () => clearAll(),
+    '%':       () => applyFn('percent'),
   };
 
-  if (keyMap[e.key]) keyMap[e.key]();
+  if (map[e.key]) map[e.key]();
 });
