@@ -1,4 +1,3 @@
-/* Calculator – clean rewrite v4 */
 const currentEl        = document.getElementById('current');
 const historyEl        = document.getElementById('history');
 const historyList      = document.getElementById('historyList');
@@ -7,14 +6,14 @@ const toggleHistoryBtn = document.getElementById('toggleHistory');
 const clearHistoryBtn  = document.getElementById('clearHistory');
 
 // ── State ─────────────────────────────────────────────────
-let tokens     = [];     // e.g. ['7', '+', '5', '+']  (always ends with op when waiting)
-let current    = '0';    // the number currently shown / being typed
-let newNumber  = false;  // TRUE  → next digit REPLACES current instead of appending
-let memory     = 0;
+let tokens    = [];      // alternating numbers & operators: ['7','+','5','+']
+let current   = '0';     // number currently being typed / shown
+let newNumber = false;   // next digit replaces current instead of appending
+let afterCalc = false;   // "=" was just pressed
+let memory    = 0;
 
-// ── Evaluator ─────────────────────────────────────────────
+// ── Evaluator (precedence: × ÷ before + −) ───────────────
 function evaluate(toks) {
-  // toks = ['7','+','5','+','6','+','3']  (odd length, ends with number)
   const nums = [], ops = [];
   for (let i = 0; i < toks.length; i++) {
     if (i % 2 === 0) {
@@ -45,34 +44,40 @@ function evaluate(toks) {
 
 // ── Helpers ───────────────────────────────────────────────
 const SYM = { '+':'+', '-':'−', '*':'×', '/':'÷' };
-function fmt(n) { return parseFloat(n.toPrecision(12)).toString(); }
-function histStr() { return tokens.map((t,i) => i%2===1 ? SYM[t] : t).join(' '); }
 
-function render() {
-  currentEl.className = 'current';
+function fmt(n)     { return parseFloat(n.toPrecision(12)).toString(); }
+function histStr()  { return tokens.map((t, i) => i % 2 === 1 ? SYM[t] : t).join(' '); }
+
+function render(histOverride) {
+  currentEl.className   = 'current';
   if (current.length > 14) currentEl.classList.add('small');
   currentEl.textContent = current;
-  historyEl.textContent = histStr();
+  historyEl.textContent = histOverride !== undefined ? histOverride : histStr();
 }
 
 function showError(msg) {
-  currentEl.className = 'current error';
+  currentEl.className   = 'current error';
   currentEl.textContent = msg;
   historyEl.textContent = '';
 }
 
 // ── Digit / decimal input ─────────────────────────────────
 function inputDigit(d) {
+  if (afterCalc) {
+    tokens = []; current = (d === '.') ? '0.' : d;
+    newNumber = false; afterCalc = false;
+    render('');
+    return;
+  }
   if (newNumber) {
-    // start a completely fresh number
-    current   = (d === '.') ? '0.' : d;
+    current = (d === '.') ? '0.' : d;
     newNumber = false;
   } else {
     if (d === '.') {
-      if (current.includes('.')) return;   // no double decimal
+      if (current.includes('.')) return;
       current += '.';
     } else {
-      current = (current === '0') ? d : current + d;
+      current = current === '0' ? d : current + d;
     }
   }
   render();
@@ -83,8 +88,9 @@ const OP = { add:'+', subtract:'-', multiply:'*', divide:'/' };
 
 function setOperator(action) {
   const op = OP[action];
+  afterCalc = false;
 
-  // If operator pressed twice in a row → just swap the operator
+  // two operators in a row → swap the last one
   if (newNumber && tokens.length > 0) {
     tokens[tokens.length - 1] = op;
     highlightActive(action);
@@ -92,11 +98,9 @@ function setOperator(action) {
     return;
   }
 
-  // Commit current number into tokens, then push operator
-  tokens.push(current);   // push the number
-  tokens.push(op);        // push the operator
-  newNumber = true;       // ← next digit starts a fresh number
-
+  tokens.push(current);
+  tokens.push(op);
+  newNumber = true;
   highlightActive(action);
   render();
 }
@@ -105,11 +109,9 @@ function setOperator(action) {
 function calculate() {
   if (tokens.length === 0) return;
 
-  // Build full expression: committed tokens + current number
-  const full = [...tokens, current];
   let result;
   try {
-    result = evaluate(full);
+    result = evaluate([...tokens, current]);
   } catch(e) {
     showError(e.message === 'DIV0' ? 'Cannot divide by zero' : 'Error');
     hardReset();
@@ -122,34 +124,20 @@ function calculate() {
 
   tokens    = [];
   current   = resStr;
-  newNumber = true;   // next digit after = starts fresh
-
-  currentEl.className   = 'current';
-  currentEl.textContent = resStr;
-  historyEl.textContent = expr;
+  newNumber = false;
+  afterCalc = true;
   highlightActive(null);
+  render('');   // clean display — expression already saved to history panel
 }
 
 // ── Clear ─────────────────────────────────────────────────
 function hardReset() {
-  tokens = []; current = '0'; newNumber = false;
+  tokens = []; current = '0'; newNumber = false; afterCalc = false;
 }
 
-function clearAll() {
-  hardReset();
-  currentEl.className   = 'current';
-  currentEl.textContent = '0';
-  historyEl.textContent = '';
-  highlightActive(null);
-}
-
-function clearEntry() {
-  current   = '0';
-  newNumber = false;
-  render();
-}
-
-function backspace() {
+function clearAll()   { hardReset(); highlightActive(null); render(''); }
+function clearEntry() { current = '0'; newNumber = false; render(); }
+function backspace()  {
   if (newNumber) return;
   current = current.length > 1 ? current.slice(0, -1) : '0';
   render();
@@ -165,13 +153,13 @@ function applyFn(action) {
     const r = fmt(Math.sqrt(v));
     addHistory(`√(${current}) = ${r}`);
     current = r; newNumber = true;
-    currentEl.textContent = r; historyEl.textContent = `√(${v})`;
+    render(`√(${v})`);
 
   } else if (action === 'square') {
     const r = fmt(v * v);
     addHistory(`(${current})² = ${r}`);
     current = r; newNumber = true;
-    currentEl.textContent = r; historyEl.textContent = `(${v})²`;
+    render(`(${v})²`);
 
   } else if (action === 'percent') {
     const base = tokens.length >= 2 ? parseFloat(tokens[tokens.length - 2]) : null;
