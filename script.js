@@ -224,11 +224,11 @@ function applyFn(action) {
 }
 
 // ── Scientific panel toggle ───────────────────────────────
-document.getElementById('toggleSci').addEventListener('click', () => {
-  const panel = document.getElementById('sciPanel');
-  const btn   = document.getElementById('toggleSci');
-  panel.classList.toggle('open');
-  btn.textContent = panel.classList.contains('open')
+const sciPanel  = document.getElementById('sciPanel');
+const toggleSci = document.getElementById('toggleSci');
+toggleSci.addEventListener('click', () => {
+  sciPanel.classList.toggle('open');
+  toggleSci.textContent = sciPanel.classList.contains('open')
     ? '𝑓(𝑥) Scientific ▴'
     : '𝑓(𝑥) Scientific ▾';
 });

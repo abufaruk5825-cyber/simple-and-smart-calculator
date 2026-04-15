@@ -49,14 +49,14 @@
         <button class="btn sci hyp" data-action="sinh">sinh</button>
         <button class="btn sci hyp" data-action="cosh">cosh</button>
         <button class="btn sci hyp" data-action="tanh">tanh</button>
-        <button class="btn sci" data-action="log10">log</button>
+        <button class="btn sci hyp" data-action="asinh">sinh⁻¹</button>
       </div>
       <!-- Inverse hyperbolic row -->
       <div class="btn-grid sci-grid">
-        <button class="btn sci hyp" data-action="asinh">sinh⁻¹</button>
         <button class="btn sci hyp" data-action="acosh">cosh⁻¹</button>
         <button class="btn sci hyp" data-action="atanh">tanh⁻¹</button>
-        <button class="btn sci" data-action="ln">ln</button>
+        <button class="btn sci" data-action="sqrt">√</button>
+        <button class="btn sci" data-action="square">x²</button>
       </div>
       <!-- Mode toggle -->
       <div class="angle-row">
@@ -91,7 +91,7 @@
       <button class="btn num" data-value="1">1</button>
       <button class="btn num" data-value="2">2</button>
       <button class="btn num" data-value="3">3</button>
-      <button class="btn eq" data-action="equals" rowspan="2">=</button>
+      <button class="btn eq" data-action="equals">=</button>
 
       <button class="btn num zero" data-value="0">0</button>
       <button class="btn num" data-value=".">.</button>
@@ -109,7 +109,7 @@
     <button class="toggle-history" id="toggleHistory">🕘 History</button>
   </div>
 
-  <script src="script.js?v=9"></script>
+  <script src="script.js?v=10"></script>
   <script>
     // Subtle floating particles in background
     const canvas = document.getElementById('bgCanvas');
