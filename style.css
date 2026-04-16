@@ -47,9 +47,9 @@ body::after {
 .calculator {
   width: 380px;
   background: linear-gradient(160deg,
-    rgba(30, 220, 60, 0.95) 0%,
-    rgba(180, 14, 40, 0.98) 50%,
-    rgba(12, 20, 45, 0.97) 100%);
+    rgba(233, 236, 233, 0.95) 0%,
+    rgba(184, 183, 183, 0.98) 50%,
+    rgba(238, 238, 243, 0.97) 100%);
   border-radius: 28px;
   padding: 22px;
   box-shadow:
