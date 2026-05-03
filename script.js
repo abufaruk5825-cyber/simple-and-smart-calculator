@@ -236,10 +236,34 @@ toggleSci.addEventListener('click', () => {
 //   Memory
 function memoryAction(action) {
   const v = parseFloat(current);
-  if      (action === 'mc')      { memory = 0; }
-  else if (action === 'mr')      { current = memory.toString(); newNumber = true; render(); }
-  else if (action === 'm-plus')  { memory += v; }
-  else if (action === 'm-minus') { memory -= v; }
+  switch (action) {
+    case 'mc':
+      memory = 0;
+      render();
+      break;
+    case 'mr':
+      current   = fmt(memory);
+      newNumber = false;
+      afterCalc = false;
+      render('M▸ ' + fmt(memory));
+      break;
+    case 'm-plus':
+      if (!isNaN(v)) {
+        memory += v;
+        afterCalc = false;
+        newNumber = true;
+        render('M+ (' + fmt(memory) + ')');
+      }
+      break;
+    case 'm-minus':
+      if (!isNaN(v)) {
+        memory -= v;
+        afterCalc = false;
+        newNumber = true;
+        render('M− (' + fmt(memory) + ')');
+      }
+      break;
+  }
 }
 
 //   History panel 
